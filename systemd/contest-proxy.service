@@ -1,0 +1,25 @@
+# contest-env: the allowlist proxy used by the contest user.
+# Enabled by 'cmanager restrict', disabled by 'cmanager unrestrict'.
+[Unit]
+Description=contest-env allowlist proxy (Squid, 127.0.0.1)
+Documentation=file:///usr/local/lib/contest-env/README.md
+After=network.target nss-lookup.target
+Before=systemd-user-sessions.service
+ConditionPathExists=/var/lib/contest-env/restricted
+ConditionPathExists=/var/lib/contest-env/squid/squid.conf
+
+[Service]
+Type=notify
+NotifyAccess=all
+Group=proxy
+RuntimeDirectory=contest-env-proxy
+RuntimeDirectoryMode=0775
+ExecStartPre=/usr/sbin/squid -k parse -f /var/lib/contest-env/squid/squid.conf
+ExecStart=/usr/sbin/squid --foreground -YC -f /var/lib/contest-env/squid/squid.conf
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

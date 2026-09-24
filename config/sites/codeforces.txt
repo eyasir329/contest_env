@@ -1,0 +1,4 @@
+# Codeforces  (codeforces.com, polygon/assets/mirror sub-domains included)
+codeforces.com
+codeforces.org               # static assets, user pictures
+@common

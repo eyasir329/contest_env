@@ -1,0 +1,121 @@
+# =============================================================================
+# AI / LLM services - ALWAYS blocked, even if the allowlist covers them
+# (e.g. allowing "google.com" still keeps gemini.google.com blocked).
+# Each entry blocks the domain and all of its sub-domains.
+#
+# The firewall already blocks everything that is not allowlisted; this list
+# is a second safety net against allowlist mistakes. Add new services freely.
+# =============================================================================
+
+# OpenAI / ChatGPT
+openai.com
+chatgpt.com
+oaistatic.com
+oaiusercontent.com
+sora.com
+# Anthropic / Claude
+anthropic.com
+claude.ai
+claude.com
+# Google
+gemini.google.com
+bard.google.com
+aistudio.google.com
+notebooklm.google.com
+notebooklm.google
+labs.google
+deepmind.google
+generativelanguage.googleapis.com
+aiplatform.googleapis.com
+alkalimakersuite-pa.clients6.google.com
+# Microsoft / GitHub Copilot
+copilot.microsoft.com
+copilot.cloud.microsoft
+bing.com
+githubcopilot.com
+copilot-proxy.githubusercontent.com
+copilot-telemetry.githubusercontent.com
+models.github.ai
+models.inference.ai.azure.com
+openai.azure.com
+# xAI / Meta
+x.ai
+grok.com
+meta.ai
+# DeepSeek / Qwen / Kimi / Chinese LLMs
+deepseek.com
+qwen.ai
+qwenlm.ai
+tongyi.aliyun.com
+dashscope.aliyuncs.com
+kimi.ai
+kimi.com
+moonshot.cn
+moonshot.ai
+doubao.com
+chatglm.cn
+zhipuai.cn
+z.ai
+yiyan.baidu.com
+yuanbao.tencent.com
+minimax.io
+minimaxi.com
+# Mistral / Cohere / others
+mistral.ai
+cohere.com
+cohere.ai
+perplexity.ai
+pplx.ai
+poe.com
+you.com
+phind.com
+character.ai
+pi.ai
+inflection.ai
+huggingface.co
+hf.co
+hf.space
+replicate.com
+together.ai
+together.xyz
+groq.com
+openrouter.ai
+fireworks.ai
+lmarena.ai
+lmsys.org
+duck.ai
+blackbox.ai
+chatbotapp.ai
+monica.im
+merlin.foyer.work
+getmerlin.in
+genspark.ai
+manus.im
+felo.ai
+liner.com
+jasper.ai
+writesonic.com
+copy.ai
+quillbot.com
+# AI coding assistants
+cursor.com
+cursor.sh
+cursor-cdn.com
+codeium.com
+windsurf.com
+tabnine.com
+sourcegraph.com
+replit.com
+bolt.new
+v0.dev
+v0.app
+lovable.dev
+trae.ai
+kiro.dev
+qodo.ai
+codium.ai
+augmentcode.com
+continue.dev
+supermaven.com
+pieces.app
+ch.at                        # "LLM over DNS/SSH/HTTP"

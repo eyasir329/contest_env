@@ -1,0 +1,9 @@
+# Shared, low-risk dependencies used by many judges.
+# Static-only services: they cannot run code or answer questions.
+challenges.cloudflare.com    # Cloudflare Turnstile ("verify you are human")
+cdnjs.cloudflare.com         # vetted JS/CSS libraries (MathJax, jQuery, ...)
+fonts.googleapis.com         # web fonts (CSS)
+fonts.gstatic.com            # web fonts (files)
+ajax.googleapis.com          # hosted JS libraries
+code.jquery.com
+cdn.mathjax.org

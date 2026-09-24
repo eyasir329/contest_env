@@ -1,0 +1,10 @@
+[Unit]
+Description=contest-env guard (every minute while contest mode is on)
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=60s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

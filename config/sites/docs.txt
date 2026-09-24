@@ -1,0 +1,7 @@
+# Language reference documentation (ICPC-style "reference material").
+# Prefer the offline copies installed by 'setup':
+#   file:///usr/share/cppreference/doc/html/en/index.html
+#   file:///usr/share/doc/python3/html/index.html
+cppreference.com             # en.cppreference.com
+docs.python.org
+docs.oracle.com              # Java SE API docs (only the docs host)

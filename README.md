@@ -1,303 +1,176 @@
-# Contest Environment Setup for NEUPC
+# NEUPC Contest Environment (`cmanager`)
 
-> Netrokona University Programming Club  
-> _Maintained for our club. [Original Repository](https://github.com/ShazidMashrafi/MDPC) - from MDPC_
+> Netrokona University Programming Club: lab PC setup for programming contests.
+> _Originally based on [MDPC](https://github.com/ShazidMashrafi/MDPC); rewritten as v2. See [docs/AUDIT.md](docs/AUDIT.md) for why._
 
----
+`cmanager` turns a Debian/Ubuntu lab PC into a contest machine. The contest
+account:
 
-## 🚀 Features
+- **can open only the contest site(s)** you list. Everything else, including
+  Google, GitHub, Stack Overflow and messaging, is unreachable;
+- **cannot use any AI**: web chatbots, AI built into Chrome, Edge, Brave or
+  Firefox, VS Code Copilot, AI editors (Cursor, Windsurf, Zed, …) and local
+  LLMs (ollama, LM Studio, …);
+- **cannot move data** with USB sticks, phones (MTP), DVDs, SD cards or Bluetooth;
+- gets a **clean home directory** for every contestant;
 
-- 🎯 **User Account Management**  
-  Effortlessly set up and reset user accounts with all essential development tools pre-installed for a consistent contest environment.
+and all of this **survives reboots, repairs itself, and can be verified** with one command.
 
-- 🌐 **Internet Restrictions**  
-  Enforce IP-based internet access control, ensuring participants can only reach approved contest resources.
+```text
+$ sudo cmanager verify
+== Verifying contest mode as 'participant' ==
+  PASS  services: firewall table loaded
+  PASS  services: proxy running
+  PASS  allowed site reachable via proxy (https://codeforces.com)
+  PASS  other site blocked (https://example.com)
+  PASS  search blocked (https://www.google.com)
+  PASS  AI blocked (https://chatgpt.com)
+  PASS  AI blocked (https://gemini.google.com)
+  PASS  AI blocked (https://claude.ai)
+  PASS  direct connection blocked (https://1.1.1.1)
+  PASS  public DNS blocked (8.8.8.8:53)
+  PASS  local DNS blocked (getent hosts example.com)
+  PASS  USB storage driver refused
 
-- 🔒 **USB Device Blocking**  
-  Automatically block access to USB storage devices during contests to maintain integrity and prevent data leaks.
-
-- ⚙️ **Automated Software Installation**  
-  Instantly install and configure popular development tools (VS Code, compilers, etc.) with a single command.
-
-- 📝 **Domain Whitelisting**  
-  Allow access only to specific contest platforms and their dependencies using a managed whitelist.
-
-- 🔄 **Smart Dependency Discovery**  
-  Auto-detect and permit essential CDNs, fonts, and APIs required by contest sites.
-
-- 🛡️ **Persistent & Secure**  
-  All restrictions and configurations survive reboots, with robust systemd integration for reliability.
-
-- 🖥️ **Easy CLI Management**  
-  Simple commands for setup, restriction, unrestriction, and status—no manual steps required.
-
-- 🔗 **Network & USB Controls**  
-  Network access limited to whitelisted sites (Squid + iptables); USB storage blocked, but keyboard/mouse allowed.
-
----
-
-## 0️⃣ Prerequisites
-
-- **Operating System:**  
-  Debian or Ubuntu (requires root or sudo privileges).
-
-- **Network:**  
-  Active internet connection (required for package installation and dependency discovery).
-
-- **Project Directory:**  
-  Ensure you are in the project folder containing all of the following files:
-  - `cmanager`
-  - `discover-dependencies.sh`
-  - `install.sh`
-  - `README.md`
-  - `reset.sh`
-  - `restrict.sh`
-  - `setup.sh`
-  - `unrestrict.sh`
-  - `whitelist.txt`
+✔ All checks passed — this machine is contest-ready.
+```
 
 ---
 
-## 1️⃣ Install the Tool
+## How it works (one paragraph)
+
+The contest user's traffic is filtered by a private **nftables** table. The
+only destination it allows is `127.0.0.1`, plus any on-site judge IPs you
+list. The contest user has no DNS. On `127.0.0.1:3128` runs a **Squid
+allowlist proxy** that decides by **domain name**, never by IP (so shared CDN
+addresses can't be abused). It also checks the **TLS SNI** of each HTTPS
+connection without decrypting it (so an allowed host can't be used as a
+front for a forbidden one). An **AI denylist** always wins over the
+allowlist. Browsers and VS Code get **enterprise policies** that turn off
+their AI features and extensions, and AI apps and local LLM runtimes get an
+**execute-deny ACL** for the contest user. Details and the threat model are in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Requirements
+
+- Debian 12+ or Ubuntu 22.04+ (desktop), with systemd
+- root (sudo) access, and Internet access while running `setup`
+
+## Quick start
 
 ```bash
-cd /path/to/project
-sudo bash install.sh            # installs to /usr/local/share/contest-manager and symlinks /usr/local/bin/cmanager
-# (optional) use a custom command name:
-# sudo bash install.sh labmgr
+git clone https://github.com/eyasir329/NEUPC-PC-SETUP.git
+cd NEUPC-PC-SETUP
+sudo ./install.sh                       # installs the `cmanager` command
+
+sudo cmanager setup                     # toolchains, editors, browsers, docs,
+                                        # contest account "participant", snapshot
+sudo cmanager add @codeforces           # choose what is allowed (see: cmanager sites)
+sudo cmanager restrict                  # contest mode ON
+sudo cmanager verify                    # prove it
+
+# between contestants
+sudo cmanager reset --force             # clean home, contest mode stays ON
+# after the contest
+sudo cmanager unrestrict                # everything back to normal
 ```
 
-> **Note:** Must be run as root because it writes to system directories (`/usr/local`, `/usr/local/bin`).
+For the full lab procedure (mock run, rollout to many PCs, contest-day
+fixes), see **[docs/CONTEST-DAY.md](docs/CONTEST-DAY.md)**.
 
-### 🛠️ What the Installer Does
+## Commands
 
-- **Creates the main install directory:**  
-  `/usr/local/share/contest-manager/` is created to store all scripts and resources.
+| Command | What it does |
+|---------|--------------|
+| `setup [USER] [--skip-packages]` | Install compilers (gcc/g++, clang, python3, pypy3, JDK), debuggers, editors (VS Code, Sublime, Code::Blocks, Geany, vim/neovim), browsers (Chrome, Firefox) and offline docs (cppreference, Python). Create the contest account without admin groups, turn off AI in browsers and VS Code, stop background updates, and take the clean-home snapshot. |
+| `snapshot [USER]` | Re-take the clean-home snapshot (after customising the desktop). |
+| `restrict [USER]` | **Contest mode ON**: proxy, firewall, no DNS, USB/phone/DVD/Bluetooth blocked, AI programs blocked, browsers locked to the proxy. |
+| `verify` | Real connection tests as the contest user, with PASS/FAIL. |
+| `unrestrict [USER]` | **Contest mode OFF**: every change reverted. |
+| `reset [USER] [--force]` | Restore the home directory from the snapshot and clean `/tmp`, cron and at jobs. `--force` logs the user out first. Contest mode is not changed. |
+| `list` | The effective allowlist, with profiles expanded. |
+| `sites` | Available site profiles and which are enabled. |
+| `add [--force] ENTRY…` | Add a domain, IP, CIDR or `@profile`. Applied live. Refuses AI domains, and refuses risky domains unless `--force` is given. |
+| `remove ENTRY…` | Remove an entry. Applied live. |
+| `reload` | Apply hand edits of `whitelist.txt`. |
+| `denied [N]` | Hosts the proxy refused, to find a missing CDN during a mock run. |
+| `discover URL…` | Load pages in headless Chrome and list every host they use: allowed, NEW, risky or AI. |
+| `status [USER]` | What is active right now. |
+| `logs` | Audit log of cmanager actions. |
 
-- **Copies all scripts:**  
-  All scripts (`cmanager`, `restrict.sh`, etc.) from the project folder are copied into the install directory.
+`USER` defaults to `CONTEST_USER` in `/etc/contest-env/contest.conf` (`participant`).
 
-- **Installs the whitelist:**  
-  If `whitelist.txt` is present, it is copied to `/usr/local/etc/contest-restriction/`.
+## The allowlist
 
-- **Sets file permissions:**  
-  The whitelist file is set to permissions `644` (readable by all, writable by owner).
+`/etc/contest-env/whitelist.txt`:
 
-- **Handles missing whitelist:**  
-  If `whitelist.txt` is missing, the installer warns the admin to create one later (either manually or using `cmanager add`).
+```text
+@codeforces          # curated profile: codeforces.com, codeforces.org, captcha, fonts, MathJax CDN
+@vjudge
+192.168.10.5         # on-site DOMjudge server (IP, any port)
+```
 
-- **Makes scripts executable:**  
-  All main scripts are set to be executable (`rwxr-xr-x`).
+Shipped profiles: `@codeforces @atcoder @codechef @vjudge @toph @lightoj
+@hackerrank @hackerearth @leetcode @cses @spoj @uva @kattis @docs @common`.
+A domain line allows that domain and all of its sub-domains. See
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md) for every option and list.
 
-- **Creates a command symlink:**  
-  A symbolic link named `$COMMAND_NAME` (default: `cmanager`) is created in `/usr/local/bin`, pointing to the `cmanager` script. This allows you to run `cmanager` (or your chosen name) from anywhere in the terminal.
+## What is blocked, and how
 
----
+| Threat | Countermeasure |
+|--------|----------------|
+| Any non-allowlisted website | nftables default-deny for the contest user; the proxy's domain allowlist |
+| AI chatbots and APIs | Default-deny, plus an `ai-denylist.txt` (100+ domains) that beats the allowlist |
+| CDN IP sharing / SNI fronting | Decisions by name; the TLS SNI must be allowlisted too (peek, never decrypt) |
+| DNS tunnels / "LLM over DNS" | No DNS for the contest user (port 53/853, plus the resolved D-Bus and Varlink paths) |
+| Browser built-in AI | Chrome/Edge/Brave/Chromium and Firefox policies (Gemini, Help me write, on-device model, AI sidebar, DevTools AI, …), all extensions blocked |
+| Editor AI | VS Code `chat.disableAIFeatures`, Copilot off, extension allowlist |
+| AI editors and local LLMs | Execute-deny ACL for the contest user on `blocked-apps.txt` matches (Cursor, Windsurf, Zed, ollama, LM Studio, llamafile, GPT4All, AI CLIs, AnyDesk/TeamViewer, …) |
+| VPN, proxy tools, tethering | Useless: every packet from the contest user is checked by the firewall, whatever the interface |
+| USB sticks, phones, DVDs, SD cards | Kernel modules refused, USB interfaces de-authorised, mounting denied by polkit (both polkit formats) |
+| Bluetooth transfers | rfkill + service stopped |
+| Leftovers between contestants | `rsync --delete` from a snapshot, plus `/tmp`, cron and at cleanup |
+| Someone turning it off | Only root can; units start before login; the guard timer repairs it every 60 s |
 
-### 📝 Commands Table
+Known limits (physical cheating, other local accounts, encrypted HTTP-level
+fronting) are listed honestly in [docs/AUDIT.md](docs/AUDIT.md#4-known-limits-be-honest-about-them).
 
-| Command             | Description                                      | Example                                |
-| ------------------- | ------------------------------------------------ | -------------------------------------- |
-| `setup [USER]`      | Set up lab PC with required software and user    | `sudo cmanager setup contestant`       |
-| `reset [USER]`      | Reset user account to clean state                | `sudo cmanager reset participant`      |
-| `restrict [USER]`   | Enable internet restrictions for user            | `sudo cmanager restrict participant`   |
-| `unrestrict [USER]` | Remove all restrictions for user                 | `sudo cmanager unrestrict participant` |
-| `discover`          | Discover external dependencies for contest sites | `sudo cmanager discover`               |
-| `status [USER]`     | Show restriction status                          | `sudo cmanager status participant`     |
-| `list`              | List currently whitelisted domains               | `sudo cmanager list`                   |
-| `add DOMAIN`        | Add domain to whitelist                          | `sudo cmanager add codeforces.com`     |
-| `remove DOMAIN`     | Remove domain from whitelist                     | `sudo cmanager remove facebook.com`    |
-| `help`              | Show help message                                | `sudo cmanager help`                   |
+## Repository layout
 
----
+```text
+bin/cmanager              command dispatcher
+lib/*.sh                  one module per concern (firewall, proxy, lockdown, browser, …)
+config/                   defaults copied to /etc/contest-env on install
+  contest.conf            settings
+  whitelist.txt           allowlist
+  sites/*.txt             site profiles
+  ai-denylist.txt         always-blocked AI services
+  risky-domains.txt       domains `add` refuses without --force
+  blocked-apps.txt        programs the contest user may not run
+systemd/                  firewall, proxy and guard units
+tests/run.sh              unit tests (make test)
+docs/                     audit, architecture, contest-day runbook, configuration, troubleshooting
+install.sh / uninstall.sh
+```
 
-## 2️⃣ Prepare the User
-
-Create/configure the contest account (default is `participant`):
+## Development
 
 ```bash
-sudo cmanager setup                 # or: sudo cmanager setup <username>
+make lint      # shellcheck
+make test      # unit tests; run as root to also validate nft rules and squid config
 ```
 
-This installs tools, creates a backup snapshot, and readies the account.
+CI (GitHub Actions) runs both on every push.
 
----
+## Upgrading from v1
 
-## 3️⃣ Build the Whitelist
+Run `sudo ./install.sh`. It removes the old `contest-restrict-*` services,
+the iptables `CONTEST_*` chains and the old udev/polkit files, and merges
+`/usr/local/etc/contest-restriction/whitelist.txt` into the new allowlist.
+Old home backups in `/opt/*_backup` are left for you to delete after
+`cmanager setup` / `cmanager snapshot`.
 
-Edit allowed contest sites (one per line). You can edit the **system** file or your **local** file:
+## License and credits
 
-**System file (recommended):**
-
-```bash
-sudo nano /usr/local/etc/contest-restriction/whitelist.txt
-```
-
-**Example lines:**
-
-```
-codeforces.com
-atcoder.jp
-codechef.com
-```
-
-> If you only edit the local `whitelist.txt` in the repo, the scripts will copy it to the system path on first use.
-
----
-
-## 4️⃣ Discover External Dependencies (CDNs/fonts/etc.)
-
-**Discover dependencies** (recommended before restricting):
-
-```bash
-sudo cmanager discover
-```
-
-This generates:
-
-```
-/usr/local/etc/contest-restriction/dependencies.txt
-```
-
-Tip: You can see what it found:
-
-```bash
-cmanager dependencies
-```
-
-### 🔍 Dependency Discovery
-
-The system includes an advanced dependency discovery feature to ensure contest platforms function correctly while maintaining strict security. This process works as follows:
-
-- **Simulates browser visits:**  
-  Automatically visits each contest platform to mimic real user access.
-
-- **Captures DNS queries:**  
-  Monitors and records all DNS queries to identify external resources required by the contest sites.
-
-- **Filters forbidden domains:**  
-  Excludes access to non-allowed domains such as `google.com`, `github.com`, `stackoverflow.com`, and others.
-
-- **Keeps only essential dependencies:**  
-  Retains only the necessary technical resources (CDNs, APIs, fonts, static assets) required for the contest platforms to work.
-
-- **Double-layer filtering:**  
-  Applies two layers of filtering for enhanced security, ensuring only safe and required domains are permitted.
-
-This approach guarantees that contest sites remain fully functional for participants, while access to unrelated or potentially insecure resources is strictly blocked.
-
----
-
-## 5️⃣ Apply the Restrictions
-
-Apply restrictions by running the restrict command:
-
-```bash
-sudo cmanager restrict                 # or: sudo cmanager restrict <username>
-```
-
-This:
-
-- Blocks USB storage for that user
-- Creates/updates firewall chains to only allow your whitelist + discovered dependencies
-- Sets up a systemd service to keep rules current
-
----
-
-## 6️⃣ Verify
-
-Check the status:
-
-```bash
-cmanager status                        # or: cmanager status <username>
-```
-
-You should see:
-
-- Service: enabled and active
-- Firewall: active
-
-Also check lists:
-
-```bash
-cmanager list
-cmanager dependencies
-```
-
-Quick functional test:
-
-```bash
-curl -I https://codeforces.com    # should succeed (200/301)
-curl -I https://google.com        # should be blocked
-
-sudo -u participant curl -I https://hackerrank.com
-sudo -u participant curl -I https://google.com
-sudo iptables -S OUTPUT | grep CONTEST_          # should show the per-user -j CONTEST_*_OUT jump
-```
-
----
-
-## 7️⃣ During the Contest (Updates on the Fly)
-
-**Add a domain:**
-
-```bash
-sudo cmanager add example.com
-sudo cmanager restrict             # re-apply to load new domain IPs
-```
-
-**Remove a domain:**
-
-```bash
-sudo cmanager remove example.com
-sudo cmanager restrict
-```
-
----
-
-## 8️⃣ After the Contest
-
-**Restore full access (remove all restrictions):**
-
-```bash
-sudo cmanager unrestrict           # or: sudo cmanager unrestrict <username>
-```
-
-The unrestrict process:
-
-- Stops and removes all systemd services and timers
-- Removes all iptables rules and custom chains for the user
-- Restores USB storage access by removing udev and polkit rules
-- Cleans up configuration files (with user confirmation for global files)
-- Verifies complete removal of all restrictions
-
----
-
-## 9️⃣ Reset the Account for the Next User/Round
-
-Put the home directory back to the clean snapshot made during setup:
-
-```bash
-sudo cmanager reset                # or: sudo cmanager reset <username>
-```
-
-- Purpose: Resets a user’s home directory to a clean state using a backup, preserving only original files. Useful for returning a contestant’s environment to pristine condition.
-
-- Picks up $RESET_USER from cmanager or defaults to “participant”.
-
----
-
-## 🔧 Handy Troubleshooting
-
-- **Whitelist missing:**  
-  Create `/usr/local/etc/contest-restriction/whitelist.txt` and rerun steps 4–5.
-- **Rules not applying:**  
-  Run `sudo cmanager restrict <user>` again.
-- **Service check:**  
-  `systemctl status contest-restrict-<user>.service`
-- **See iptables chains:**  
-  `sudo iptables -L | grep CONTEST` (and `sudo ip6tables -L | grep CONTEST`)
-- **Nothing loads:**  
-  Ensure DNS works and you ran discovery (step
-
----
+Built for NEUPC contests. The original idea comes from
+[MDPC](https://github.com/ShazidMashrafi/MDPC).

@@ -1,0 +1,9 @@
+# contest-env: self-healing check (firewall table present, proxy running,
+# resolver socket ACL, Bluetooth off). Triggered by contest-guard.timer.
+[Unit]
+Description=contest-env guard
+ConditionPathExists=/var/lib/contest-env/restricted
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/contest-env/bin/cmanager _guard

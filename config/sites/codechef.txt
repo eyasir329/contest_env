@@ -1,0 +1,3 @@
+# CodeChef
+codechef.com                 # includes cdn.codechef.com
+@common

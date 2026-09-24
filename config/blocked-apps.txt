@@ -1,0 +1,60 @@
+# =============================================================================
+# Applications the contest user may NOT execute while restricted
+# (AI editors, local LLM runtimes, remote-desktop tools).
+#
+# Each line is a command name (looked up in PATH) or an absolute path / glob.
+# 'restrict' adds a POSIX ACL "user:<contest-user>:---" to every match that
+# exists; 'unrestrict' removes exactly those ACLs again. Other users are not
+# affected. Snap-packaged apps cannot be ACL'd - 'cmanager status' reports them.
+# =============================================================================
+
+# --- AI code editors ----------------------------------------------------------
+cursor
+/opt/Cursor
+/opt/cursor*
+/usr/share/cursor
+windsurf
+/opt/windsurf*
+/usr/share/windsurf
+zed
+zeditor
+/opt/zed*
+void
+/usr/share/void
+trae
+/opt/trae*
+kiro
+/opt/kiro*
+/usr/share/kiro
+pearai
+/opt/PearAI*
+# --- Local LLM runtimes / chat apps ------------------------------------------
+ollama
+/usr/local/lib/ollama
+/usr/share/ollama
+lm-studio
+lmstudio
+/opt/lm-studio*
+/opt/LM-Studio*
+gpt4all
+/opt/gpt4all*
+jan
+/opt/Jan
+llamafile
+llama-cli
+llama-server
+koboldcpp
+localai
+/opt/chatgpt*
+/opt/ChatGPT*
+/opt/Claude*
+/opt/claude-desktop*
+claude
+codex
+gemini
+aider
+# --- Remote access (a helper outside the room) --------------------------------
+anydesk
+teamviewer
+/opt/teamviewer
+rustdesk

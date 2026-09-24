@@ -1,0 +1,63 @@
+# =============================================================================
+# Domains that are NOT AI services but are almost always wrong to allow in a
+# contest: search engines, code hosting, Q&A, messaging, file sharing,
+# generic CDNs that serve arbitrary user content.
+#
+# 'cmanager add' refuses these (and their sub-domains) unless --force is given.
+# =============================================================================
+google.com
+googleusercontent.com
+youtube.com
+duckduckgo.com
+yahoo.com
+yandex.com
+yandex.ru
+baidu.com
+github.com
+githubusercontent.com
+github.io
+gitlab.com
+bitbucket.org
+sourceforge.net
+stackoverflow.com
+stackexchange.com
+geeksforgeeks.org
+quora.com
+reddit.com
+medium.com
+wikipedia.org
+chegg.com
+brainly.com
+facebook.com
+messenger.com
+instagram.com
+whatsapp.com
+telegram.org
+t.me
+discord.com
+discord.gg
+twitter.com
+x.com
+linkedin.com
+tiktok.com
+pastebin.com
+ideone.com
+codeshare.io
+onlinegdb.com
+paste.ubuntu.com
+hastebin.com
+dropbox.com
+drive.google.com
+mega.nz
+wetransfer.com
+amazonaws.com
+cloudfront.net
+azureedge.net
+jsdelivr.net
+unpkg.com
+githack.com
+netlify.app
+vercel.app
+pages.dev
+workers.dev
+herokuapp.com

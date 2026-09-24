@@ -1,0 +1,3 @@
+# HackerEarth
+hackerearth.com              # includes media./static. sub-domains
+@common

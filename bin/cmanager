@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------------------------------
+# cmanager — Contest Environment Manager (NEUPC)
+#
+# Turns a Debian/Ubuntu lab PC into a contest machine: the contest account
+# can reach ONLY the allowlisted contest sites, has no AI assistants (web,
+# browser-built-in, editor, or local), no removable media, and is reset to
+# a clean state between rounds.
+#
+# Run 'cmanager help' for usage. Documentation: README.md and docs/.
+# -----------------------------------------------------------------------------
+set -Eeuo pipefail
+
+CM_VERSION="2.0.0"
+
+# Resolve our install directory (works through the /usr/local/bin symlink).
+CM_HOME="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+for _lib in common firewall proxy lockdown browser editor setup reset contest status discover legacy; do
+  # shellcheck source=/dev/null
+  source "$CM_HOME/lib/$_lib.sh"
+done
+unset _lib
+
+usage() {
+  cat <<EOF
+cmanager $CM_VERSION — Contest Environment Manager
+
+Usage: sudo cmanager <command> [options] [args]
+
+Preparation (needs Internet, contest mode OFF)
+  setup [USER]              Install toolchains, editors, browsers, offline docs,
+                            create the contest account, disable browser/editor AI,
+                            and take the clean-home snapshot.
+                            (--skip-packages: only account/profile/policies/snapshot)
+  snapshot [USER]           Re-take the clean-home snapshot used by 'reset'.
+  discover URL...           Load pages in headless Chrome and list every host they
+                            use, marked allowed / NEW / risky / AI.
+
+Contest mode
+  restrict [USER]           Turn contest mode ON (allowlist-only Internet, no DNS,
+                            no USB/phones/DVD/Bluetooth, AI apps blocked).
+  verify                    Prove it: real connection tests run as the contest user.
+  unrestrict [USER]         Turn contest mode OFF (everything restored).
+  reset [USER] [--force]    Restore the user's home from the snapshot (between
+                            rounds/contestants). Contest mode is not changed.
+
+Allowlist  ($CM_WHITELIST_FILE)
+  list                      Effective allowlist (profiles expanded).
+  sites                     Available site profiles (@codeforces, @atcoder, ...).
+  add [--force] ENTRY...    Add a domain / IP / CIDR / @profile (applied live).
+  remove ENTRY...           Remove an entry (applied live).
+  reload                    Re-apply after editing the allowlist by hand.
+  denied [N]                Hosts the proxy refused (in the last N log lines).
+
+Information
+  status [USER]             What is active right now.
+  logs                      Recent cmanager actions (audit log).
+  version | help
+
+USER defaults to CONTEST_USER in $CM_CONF_FILE (currently: ${CONTEST_USER}).
+Environment: CM_ASSUME_YES=1 (no prompts), CONTEST_PASSWORD=... (setup), NO_COLOR=1.
+EOF
+}
+
+main() {
+  cm_load_config
+  local cmd="${1:-help}"; shift || true
+  local force=0 skip_pkgs=0 args=()
+  while (( $# )); do
+    case "$1" in
+      -f|--force)          force=1 ;;
+      -y|--yes)            CM_ASSUME_YES=1 ;;
+      --skip-packages)     skip_pkgs=1 ;;
+      -u|--user)           shift; args+=("${1:?--user needs a value}") ;;
+      -h|--help)           usage; return 0 ;;
+      --)                  shift; args+=("$@"); break ;;
+      -*)                  cm_die "Unknown option: $1 (see: cmanager help)" ;;
+      *)                   args+=("$1") ;;
+    esac
+    shift
+  done
+  set -- "${args[@]+"${args[@]}"}"
+
+  case "$cmd" in
+    setup)       cm_cmd_setup "$(cm_target_user "${1:-}")" "${CONTEST_PASSWORD:-}" "$skip_pkgs" ;;
+    snapshot)    cm_require_root snapshot; local u; u="$(cm_target_user "${1:-}")"; cm_require_user "$u"
+                 cm_audit "snapshot user=$u"; cm_snapshot_take "$u" ;;
+    restrict)    cm_cmd_restrict   "$(cm_target_user "${1:-}")" ;;
+    unrestrict)  cm_cmd_unrestrict "$(cm_target_user "${1:-}")" ;;
+    reset)       cm_cmd_reset      "$(cm_target_user "${1:-}")" "$force" ;;
+    verify|check) cm_cmd_verify ;;
+    status)      cm_cmd_status     "$(cm_target_user "${1:-}")" ;;
+    list)        cm_cmd_list ;;
+    sites)       cm_cmd_sites ;;
+    add)         cm_cmd_add "$force" "$@" ;;
+    remove|rm)   cm_cmd_remove "$@" ;;
+    reload)      cm_cmd_reload ;;
+    denied)      cm_cmd_denied "${1:-5000}" ;;
+    discover)    cm_cmd_discover "$@" ;;
+    logs)        tail -n "${1:-50}" "$CM_LOG_DIR/cmanager.log" 2>/dev/null || echo "No actions logged yet." ;;
+    _guard)      cm_cmd_guard ;;
+    _legacy-cleanup) cm_require_root; cm_legacy_cleanup ;;
+    version|--version|-V) echo "cmanager $CM_VERSION" ;;
+    help|--help|-h) usage ;;
+    *)           cm_err "Unknown command: $cmd"; echo; usage; return 1 ;;
+  esac
+}
+
+main "$@"

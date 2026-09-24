@@ -1,0 +1,38 @@
+# =============================================================================
+# Contest allowlist  (/etc/contest-env/whitelist.txt)
+#
+# Everything NOT listed here is unreachable for the contest user.
+#
+#   example.com        the domain AND all its sub-domains (www., cdn., ...)
+#   @codeforces        include a curated site profile (see: cmanager sites)
+#   192.168.10.5       an IP address (e.g. an on-site DOMjudge server)
+#   10.10.0.0/24       an IP range
+#
+# URLs are accepted too (https://x.com/path -> x.com). Comments start with #.
+# After editing, apply with:   sudo cmanager reload
+#
+# Keep this list as SHORT as possible: enable only the platform(s) that
+# today's contest actually uses. AI services are always blocked
+# (ai-denylist.txt), even if a line below would cover them.
+# =============================================================================
+
+# --- Online judges (enable the ones you need) --------------------------------
+@codeforces
+#@atcoder
+#@codechef
+#@vjudge
+#@toph
+#@lightoj
+#@hackerrank
+#@hackerearth
+#@leetcode
+#@cses
+#@spoj
+#@uva
+#@kattis
+
+# --- Language documentation (only if your contest rules allow it) ------------
+#@docs
+
+# --- On-site judge (DOMjudge / PC^2) by IP -----------------------------------
+#192.168.0.10

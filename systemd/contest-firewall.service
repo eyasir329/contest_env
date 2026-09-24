@@ -1,0 +1,20 @@
+# contest-env: loads the per-user nftables ruleset at boot, before anyone
+# can log in. Enabled by 'cmanager restrict', disabled by 'cmanager unrestrict'.
+[Unit]
+Description=contest-env per-user egress firewall (nftables)
+Documentation=file:///usr/local/lib/contest-env/README.md
+DefaultDependencies=no
+After=local-fs.target
+Wants=network-pre.target
+Before=network-pre.target systemd-user-sessions.service display-manager.service shutdown.target
+Conflicts=shutdown.target
+ConditionPathExists=/var/lib/contest-env/restricted
+ConditionPathExists=/var/lib/contest-env/firewall.nft
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /var/lib/contest-env/firewall.nft
+
+[Install]
+WantedBy=sysinit.target

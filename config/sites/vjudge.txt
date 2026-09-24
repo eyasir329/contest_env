@@ -1,0 +1,5 @@
+# Virtual Judge (vjudge.net) - many Bangladeshi university contests run here.
+# Note: vjudge only *relays* submissions; problem statements that are
+# embedded from the origin judge may need that judge's profile as well.
+vjudge.net
+@common
