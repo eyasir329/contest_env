@@ -2,6 +2,13 @@
 
 A checklist for lab admins and the judge team. Print it.
 
+First time? Do [GETTING-STARTED.md](GETTING-STARTED.md) on one PC first.
+Ready-made allowlists for common contest types: [EXAMPLES.md](EXAMPLES.md).
+
+**Tell contestants in the announcement:** log in to the judge with **e-mail/username + password**.
+If they signed up with Google, they should set a password on the judge account before the contest
+([PLATFORMS.md](PLATFORMS.md#a-recommended-give-the-judge-account-a-normal-password-no-google-needed)).
+
 ## T-3 days: prepare every PC (Internet on)
 
 ```bash
@@ -54,6 +61,10 @@ scp /etc/contest-env/whitelist.txt admin@pc-02:/tmp/ && ssh admin@pc-02 \
 ```
 
 ## Contest day
+
+If some contestants must use Google login, run the supervised
+[login window](PLATFORMS.md#b-a-supervised-login-window-before-contest-mode-is-switched-on)
+*before* step 1, and skip the `reset` in step 2.
 
 1. Leave contest mode **on** from the mock run (it survives reboots), or turn it on now: `sudo cmanager restrict`.
 2. `sudo cmanager reset` on each PC, so every contestant starts from the snapshot.

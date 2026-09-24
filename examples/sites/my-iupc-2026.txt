@@ -1,0 +1,13 @@
+# My IUPC 2026 (example custom site profile)
+#
+# A profile is just a named list of allowlist entries. Put this file in
+# /etc/contest-env/sites/ and enable it with:
+#   sudo cmanager add @my-iupc-2026
+#
+# The first comment line becomes the description shown by 'cmanager sites'.
+# Upgrades never overwrite profiles with names that are not shipped.
+
+iupc.example.edu            # registration / announcements page
+192.168.10.5                # DOMjudge
+192.168.10.6                # print server
+@common                     # captcha, fonts, JS libraries (if the site uses them)

@@ -1,176 +1,225 @@
-# NEUPC Contest Environment (`cmanager`)
+# contest_env: lock a Linux lab PC down for programming contests
 
-> Netrokona University Programming Club: lab PC setup for programming contests.
-> _Originally based on [MDPC](https://github.com/ShazidMashrafi/MDPC); rewritten as v2. See [docs/AUDIT.md](docs/AUDIT.md) for why._
+> Built and maintained by the **Netrokona University Programming Club (NEUPC)**.
+> The idea started from [MDPC](https://github.com/ShazidMashrafi/MDPC); this is a full rewrite (v2).
 
-`cmanager` turns a Debian/Ubuntu lab PC into a contest machine. The contest
-account:
+You run a programming contest in a computer lab. You want every contestant to be able to:
 
-- **can open only the contest site(s)** you list. Everything else, including
-  Google, GitHub, Stack Overflow and messaging, is unreachable;
-- **cannot use any AI**: web chatbots, AI built into Chrome, Edge, Brave or
-  Firefox, VS Code Copilot, AI editors (Cursor, Windsurf, Zed, …) and local
-  LLMs (ollama, LM Studio, …);
-- **cannot move data** with USB sticks, phones (MTP), DVDs, SD cards or Bluetooth;
-- gets a **clean home directory** for every contestant;
+- ✅ open **the contest website** (Codeforces, AtCoder, vjudge, your own DOMjudge server, …), log in and submit;
+- ✅ use normal programming tools (g++, Python, Java, VS Code, Code::Blocks, Sublime, Geany, vim).
 
-and all of this **survives reboots, repairs itself, and can be verified** with one command.
+And you want them **not** to be able to:
+
+- ❌ open any other website (Google, GitHub, Stack Overflow, Facebook, …);
+- ❌ use **any AI**: ChatGPT/Gemini/Claude websites, AI built into Chrome/Edge/Firefox, VS Code Copilot, AI editors like Cursor, or an AI model installed on the PC itself;
+- ❌ copy files in or out with a USB stick, a phone, a DVD or Bluetooth;
+- ❌ find anything the previous contestant left on the PC.
+
+`contest_env` does all of that with a single command-line tool, **`cmanager`**, on Debian or Ubuntu PCs.
 
 ```text
-$ sudo cmanager verify
-== Verifying contest mode as 'participant' ==
-  PASS  services: firewall table loaded
-  PASS  services: proxy running
+$ sudo cmanager restrict        # contest mode ON
+$ sudo cmanager verify          # prove it works
   PASS  allowed site reachable via proxy (https://codeforces.com)
   PASS  other site blocked (https://example.com)
-  PASS  search blocked (https://www.google.com)
   PASS  AI blocked (https://chatgpt.com)
-  PASS  AI blocked (https://gemini.google.com)
-  PASS  AI blocked (https://claude.ai)
   PASS  direct connection blocked (https://1.1.1.1)
   PASS  public DNS blocked (8.8.8.8:53)
-  PASS  local DNS blocked (getent hosts example.com)
-  PASS  USB storage driver refused
-
+  ...
 ✔ All checks passed — this machine is contest-ready.
+$ sudo cmanager unrestrict      # contest mode OFF, everything back to normal
 ```
 
 ---
 
-## How it works (one paragraph)
+## Contents
 
-The contest user's traffic is filtered by a private **nftables** table. The
-only destination it allows is `127.0.0.1`, plus any on-site judge IPs you
-list. The contest user has no DNS. On `127.0.0.1:3128` runs a **Squid
-allowlist proxy** that decides by **domain name**, never by IP (so shared CDN
-addresses can't be abused). It also checks the **TLS SNI** of each HTTPS
-connection without decrypting it (so an allowed host can't be used as a
-front for a forbidden one). An **AI denylist** always wins over the
-allowlist. Browsers and VS Code get **enterprise policies** that turn off
-their AI features and extensions, and AI apps and local LLM runtimes get an
-**execute-deny ACL** for the contest user. Details and the threat model are in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- [What contestants experience](#what-contestants-experience)
+- [5-minute quick start](#5-minute-quick-start)
+- [The 4 ideas you need to know](#the-4-ideas-you-need-to-know)
+- [Documentation map](#documentation-map)
+- [Command cheat-sheet](#command-cheat-sheet)
+- [Requirements](#requirements)
+- [Repository layout](#repository-layout)
+- [FAQ (short)](#faq-short)
+
+---
+
+## What contestants experience
+
+They log in as the account **`participant`** (you choose its password) and see a normal desktop.
+
+| They try to… | What happens |
+|--------------|--------------|
+| Open `codeforces.com` (on your list) | Works normally: log in, read problems, submit |
+| Open `google.com`, `github.com`, `youtube.com` | The page does not load ("This site can't be reached") |
+| Open `chatgpt.com`, `gemini.google.com`, `claude.ai` | Does not load, **even if you allowed a parent domain by mistake** |
+| Click the Gemini / "AI" button in Chrome or the AI sidebar in Firefox | The feature is gone (switched off by browser policy) |
+| Install a browser extension | Blocked by policy |
+| Use Copilot / AI chat in VS Code | AI features are switched off, and they couldn't reach the servers anyway |
+| Run `cursor`, `ollama`, `lm-studio` | `Permission denied` |
+| `curl`, `pip install`, `ping 8.8.8.8` in a terminal | Fails: no network except the contest site through the browser proxy |
+| Plug in a USB stick or a phone | Nothing shows up |
+| Compile and run C++/Python/Java, use the debugger | Works normally, offline |
+| Read the C++ / Python reference | Works offline (`file:///usr/share/cppreference/...`) |
+
+The admin account is **not** restricted (only the terminal is fully free; see the FAQ).
+
+---
+
+## 5-minute quick start
+
+Run this on **one** lab PC first. It needs Internet access and `sudo`.
+
+```bash
+# 1. Get the code and install the `cmanager` command
+git clone https://github.com/eyasir329/contest_env.git
+cd contest_env
+sudo ./install.sh
+
+# 2. Install compilers, editors and browsers, and create the contest account
+#    (takes 5-15 minutes; asks you to choose the "participant" password)
+sudo cmanager setup
+
+# 3. Say which contest site is allowed (Codeforces is the default)
+sudo cmanager sites                 # list available site profiles
+sudo cmanager add @atcoder          # enable another one, if needed
+
+# 4. Turn contest mode on and check it
+sudo cmanager restrict
+sudo cmanager verify
+
+# 5. After the contest
+sudo cmanager unrestrict
+```
+
+New to this? Follow **[docs/GETTING-STARTED.md](docs/GETTING-STARTED.md)**. It walks through every step and shows the output you should expect.
+
+---
+
+## The 4 ideas you need to know
+
+**1. The allowlist.** A text file, `/etc/contest-env/whitelist.txt`, lists what contestants may open. Everything else is blocked. You rarely write domains yourself; you switch on ready-made **site profiles**:
+
+```text
+@codeforces        # codeforces.com + what its pages need (captcha, fonts, MathJax)
+@vjudge
+192.168.10.5       # your on-site DOMjudge server, by IP address
+```
+
+**2. Contest mode.** `sudo cmanager restrict` turns it on and `sudo cmanager unrestrict` turns it off. It survives reboots, and a background check repairs it every minute if something breaks.
+
+**3. The snapshot.** `setup` saves a clean copy of the contestant's home folder. `sudo cmanager reset` puts it back between contestants: files, browser history, logins and shell history are all gone. Contest mode stays on.
+
+**4. Verify, don't assume.** `sudo cmanager verify` makes real connections *as the contestant* and prints PASS/FAIL for each rule. Run it on every PC before the contest starts.
+
+How it works inside (in plain language): **[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)**.
+
+---
+
+## Documentation map
+
+| If you want to… | Read |
+|-----------------|------|
+| Set up your first PC, step by step | [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) |
+| Copy a ready-made setup for your kind of contest | [docs/EXAMPLES.md](docs/EXAMPLES.md) and the [examples/](examples/) folder |
+| Know what each command does and prints | [docs/COMMANDS.md](docs/COMMANDS.md) |
+| Understand how the blocking works | [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) |
+| Know how login and submission work on each judge (incl. Google login) | [docs/PLATFORMS.md](docs/PLATFORMS.md) |
+| Run a real contest day (checklist to print) | [docs/CONTEST-DAY.md](docs/CONTEST-DAY.md) |
+| Change settings, allowlist, profiles, blocked apps | [docs/CONFIGURATION.md](docs/CONFIGURATION.md) |
+| Fix a problem | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) and [docs/FAQ.md](docs/FAQ.md) |
+| Read the security design and threat model | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| See why v1 was rewritten, and the known limits | [docs/AUDIT.md](docs/AUDIT.md) |
+| Contribute a site profile or a fix | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+---
+
+## Command cheat-sheet
+
+| Command | Use it when |
+|---------|-------------|
+| `sudo cmanager setup` | Once per PC: installs software, creates `participant`, takes the snapshot |
+| `sudo cmanager sites` / `list` | See which profiles exist / what is allowed right now |
+| `sudo cmanager add @vjudge` / `add 192.168.10.5` | Allow a site profile / your judge server (applied immediately) |
+| `sudo cmanager remove @vjudge` | Take it away again |
+| `sudo cmanager restrict` | **Contest mode ON** |
+| `sudo cmanager verify` | Prove the PC is ready (PASS/FAIL) |
+| `sudo cmanager status` | See what is active |
+| `sudo cmanager denied` | "The contest site looks broken": shows which hosts were refused |
+| `sudo cmanager reset --force` | Next contestant: clean home folder |
+| `sudo cmanager unrestrict` | **Contest mode OFF** |
+| `sudo cmanager help` | Everything else |
+
+Full reference with example output: [docs/COMMANDS.md](docs/COMMANDS.md).
+
+---
 
 ## Requirements
 
-- Debian 12+ or Ubuntu 22.04+ (desktop), with systemd
-- root (sudo) access, and Internet access while running `setup`
-
-## Quick start
-
-```bash
-git clone https://github.com/eyasir329/contest_env.git
-cd contest_env
-sudo ./install.sh                       # installs the `cmanager` command
-
-sudo cmanager setup                     # toolchains, editors, browsers, docs,
-                                        # contest account "participant", snapshot
-sudo cmanager add @codeforces           # choose what is allowed (see: cmanager sites)
-sudo cmanager restrict                  # contest mode ON
-sudo cmanager verify                    # prove it
-
-# between contestants
-sudo cmanager reset --force             # clean home, contest mode stays ON
-# after the contest
-sudo cmanager unrestrict                # everything back to normal
-```
-
-For the full lab procedure (mock run, rollout to many PCs, contest-day
-fixes), see **[docs/CONTEST-DAY.md](docs/CONTEST-DAY.md)**.
-
-## Commands
-
-| Command | What it does |
-|---------|--------------|
-| `setup [USER] [--skip-packages]` | Install compilers (gcc/g++, clang, python3, pypy3, JDK), debuggers, editors (VS Code, Sublime, Code::Blocks, Geany, vim/neovim), browsers (Chrome, Firefox) and offline docs (cppreference, Python). Create the contest account without admin groups, turn off AI in browsers and VS Code, stop background updates, and take the clean-home snapshot. |
-| `snapshot [USER]` | Re-take the clean-home snapshot (after customising the desktop). |
-| `restrict [USER]` | **Contest mode ON**: proxy, firewall, no DNS, USB/phone/DVD/Bluetooth blocked, AI programs blocked, browsers locked to the proxy. |
-| `verify` | Real connection tests as the contest user, with PASS/FAIL. |
-| `unrestrict [USER]` | **Contest mode OFF**: every change reverted. |
-| `reset [USER] [--force]` | Restore the home directory from the snapshot and clean `/tmp`, cron and at jobs. `--force` logs the user out first. Contest mode is not changed. |
-| `list` | The effective allowlist, with profiles expanded. |
-| `sites` | Available site profiles and which are enabled. |
-| `add [--force] ENTRY…` | Add a domain, IP, CIDR or `@profile`. Applied live. Refuses AI domains, and refuses risky domains unless `--force` is given. |
-| `remove ENTRY…` | Remove an entry. Applied live. |
-| `reload` | Apply hand edits of `whitelist.txt`. |
-| `denied [N]` | Hosts the proxy refused, to find a missing CDN during a mock run. |
-| `discover URL…` | Load pages in headless Chrome and list every host they use: allowed, NEW, risky or AI. |
-| `status [USER]` | What is active right now. |
-| `logs` | Audit log of cmanager actions. |
-
-`USER` defaults to `CONTEST_USER` in `/etc/contest-env/contest.conf` (`participant`).
-
-## The allowlist
-
-`/etc/contest-env/whitelist.txt`:
-
-```text
-@codeforces          # curated profile: codeforces.com, codeforces.org, captcha, fonts, MathJax CDN
-@vjudge
-192.168.10.5         # on-site DOMjudge server (IP, any port)
-```
-
-Shipped profiles: `@codeforces @atcoder @codechef @vjudge @toph @lightoj
-@hackerrank @hackerearth @leetcode @cses @spoj @uva @kattis @docs @common`.
-A domain line allows that domain and all of its sub-domains. See
-[docs/CONFIGURATION.md](docs/CONFIGURATION.md) for every option and list.
-
-## What is blocked, and how
-
-| Threat | Countermeasure |
-|--------|----------------|
-| Any non-allowlisted website | nftables default-deny for the contest user; the proxy's domain allowlist |
-| AI chatbots and APIs | Default-deny, plus an `ai-denylist.txt` (100+ domains) that beats the allowlist |
-| CDN IP sharing / SNI fronting | Decisions by name; the TLS SNI must be allowlisted too (peek, never decrypt) |
-| DNS tunnels / "LLM over DNS" | No DNS for the contest user (port 53/853, plus the resolved D-Bus and Varlink paths) |
-| Browser built-in AI | Chrome/Edge/Brave/Chromium and Firefox policies (Gemini, Help me write, on-device model, AI sidebar, DevTools AI, …), all extensions blocked |
-| Editor AI | VS Code `chat.disableAIFeatures`, Copilot off, extension allowlist |
-| AI editors and local LLMs | Execute-deny ACL for the contest user on `blocked-apps.txt` matches (Cursor, Windsurf, Zed, ollama, LM Studio, llamafile, GPT4All, AI CLIs, AnyDesk/TeamViewer, …) |
-| VPN, proxy tools, tethering | Useless: every packet from the contest user is checked by the firewall, whatever the interface |
-| USB sticks, phones, DVDs, SD cards | Kernel modules refused, USB interfaces de-authorised, mounting denied by polkit (both polkit formats) |
-| Bluetooth transfers | rfkill + service stopped |
-| Leftovers between contestants | `rsync --delete` from a snapshot, plus `/tmp`, cron and at cleanup |
-| Someone turning it off | Only root can; units start before login; the guard timer repairs it every 60 s |
-
-Known limits (physical cheating, other local accounts, encrypted HTTP-level
-fronting) are listed honestly in [docs/AUDIT.md](docs/AUDIT.md#4-known-limits-be-honest-about-them).
+- **OS:** Ubuntu 22.04 / 24.04 or Debian 12+ (desktop), with systemd.
+- **Access:** an admin account with `sudo`. Contestants use a separate account.
+- **Network:** Internet during `setup`. During the contest, only the allowed sites are reached.
+- **Hardware:** anything that runs Ubuntu desktop. Google Chrome is installed only on 64-bit x86 (amd64); Firefox works everywhere.
 
 ## Repository layout
 
 ```text
-bin/cmanager              command dispatcher
-lib/*.sh                  one module per concern (firewall, proxy, lockdown, browser, …)
-config/                   defaults copied to /etc/contest-env on install
-  contest.conf            settings
-  whitelist.txt           allowlist
-  sites/*.txt             site profiles
-  ai-denylist.txt         always-blocked AI services
-  risky-domains.txt       domains `add` refuses without --force
-  blocked-apps.txt        programs the contest user may not run
-systemd/                  firewall, proxy and guard units
-tests/run.sh              unit tests (make test)
-docs/                     audit, architecture, contest-day runbook, configuration, troubleshooting
-install.sh / uninstall.sh
+contest_env/
+├── README.md               ← you are here
+├── install.sh              installs `cmanager` (and upgrades / migrates old versions)
+├── uninstall.sh            removes it again
+├── bin/cmanager            the command (reads its modules from lib/)
+├── lib/                    one Bash module per job
+│   ├── common.sh           settings, allowlist parsing, logging
+│   ├── firewall.sh         nftables rules for the contest account
+│   ├── proxy.sh            the Squid allowlist proxy
+│   ├── lockdown.sh         USB / phone / DVD / Bluetooth / AI-app blocking
+│   ├── browser.sh          Chrome + Firefox policies (AI off, proxy)
+│   ├── editor.sh           VS Code settings (AI off)
+│   ├── setup.sh            software installation + account creation
+│   ├── reset.sh            snapshot / reset
+│   ├── contest.sh          restrict / unrestrict / add / remove / reload
+│   ├── status.sh           status / verify
+│   ├── discover.sh         discover / denied
+│   └── legacy.sh           removes the old v1 when upgrading
+├── config/                 defaults, copied to /etc/contest-env/ on install
+│   ├── contest.conf        settings (which user, what to block, what to install)
+│   ├── whitelist.txt       the allowlist
+│   ├── sites/*.txt         site profiles (@codeforces, @atcoder, …)
+│   ├── ai-denylist.txt     AI services, always blocked
+│   ├── risky-domains.txt   domains `add` refuses without --force
+│   └── blocked-apps.txt    programs contestants may not run
+├── systemd/                services that keep contest mode on after reboot
+├── examples/               ready-to-copy allowlists, profile and rollout script
+├── docs/                   all documentation
+└── tests/run.sh            automated tests (`make test`)
 ```
+
+## FAQ (short)
+
+**Does it change anything for my admin account?**
+Your terminal is never restricted. While contest mode is on, *browsers* on the PC (for every account) use the contest proxy, so your browser sees only the allowed sites too. Turn contest mode off to browse normally.
+
+**Can a smart contestant turn it off?**
+Not without root. The contestant account has no `sudo`, all rules are owned by root, and a watchdog repairs them within 60 seconds. Keep the admin password secret and lock the BIOS (no booting from USB).
+
+**Can contestants log in with Google?**
+Not by default: Google's domains are blocked because they also serve Search and Gemini. Recommended: ask contestants to set a normal password on their judge account before the contest. Details and the alternatives: [docs/PLATFORMS.md](docs/PLATFORMS.md).
+
+**A contest site loads but looks broken.**
+It needs an extra host (a CDN or captcha). Run `sudo cmanager denied`, then `sudo cmanager add <host>`. See [docs/EXAMPLES.md](docs/EXAMPLES.md#example-6--the-contest-site-looks-broken-mid-contest).
+
+**Does it decrypt contestants' traffic?**
+No. HTTPS is never decrypted; the proxy only reads the site *name*.
+
+More: [docs/FAQ.md](docs/FAQ.md).
 
 ## Development
 
 ```bash
-make lint      # shellcheck
-make test      # unit tests; run as root to also validate nft rules and squid config
+make lint   # shellcheck
+make test   # unit tests (run as root to also validate the firewall and proxy config)
 ```
 
-CI (GitHub Actions) runs both on every push.
-
-## Upgrading from v1
-
-Run `sudo ./install.sh`. It removes the old `contest-restrict-*` services,
-the iptables `CONTEST_*` chains and the old udev/polkit files, and merges
-`/usr/local/etc/contest-restriction/whitelist.txt` into the new allowlist.
-Old home backups in `/opt/*_backup` are left for you to delete after
-`cmanager setup` / `cmanager snapshot`.
-
-## License and credits
-
-Built for NEUPC contests. The original idea comes from
-[MDPC](https://github.com/ShazidMashrafi/MDPC).
+GitHub Actions runs both on every push. See [CONTRIBUTING.md](CONTRIBUTING.md).

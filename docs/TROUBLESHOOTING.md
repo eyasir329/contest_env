@@ -23,8 +23,8 @@ Before contest day, run `sudo cmanager discover https://site/contest/123`
 with contest mode **off** to see every host a page uses.
 
 Never add `google.com`, `github.com` and similar just to "make it work". If
-a site needs Google reCAPTCHA, ask the organisers whether a
-`recaptcha.net`-based login or a pre-contest login is possible.
+login needs Google (sign-in or Google captcha), see
+[PLATFORMS.md](PLATFORMS.md#contestants-who-normally-use-sign-in-with-google-three-options).
 
 ## Nothing loads at all for the contestant
 

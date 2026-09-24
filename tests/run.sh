@@ -98,6 +98,14 @@ eq "AI denylist entries are valid domains" "${bad_ai:-none}" "none"
 cp "$ROOT/config/whitelist.txt" "$CM_ETC_DIR/whitelist.txt"
 eq "default allowlist expands cleanly" "$(cm_expand_whitelist 2>&1 >/dev/null | wc -l)" "0"
 
+for ex in "$ROOT"/examples/whitelist-*.txt; do
+  eq "example $(basename "$ex") expands cleanly" "$(cm_expand_whitelist "$ex" 2>&1 >/dev/null | wc -l)" "0"
+done
+cp "$ROOT"/examples/sites/*.txt "$CM_ETC_DIR/sites/"
+printf '@my-iupc-2026\n' > "$TMP/custom.txt"
+eq "example custom profile expands cleanly" "$(cm_expand_whitelist "$TMP/custom.txt" 2>&1 >/dev/null | wc -l)" "0"
+yes "example custom profile includes its judge IP" grep -qx 'ipv4 192.168.10.5' <<< "$(cm_expand_whitelist "$TMP/custom.txt" 2>/dev/null)"
+
 echo "firewall ruleset"
 printf '@codeforces\n192.168.0.10\n10.20.0.0/16\nfd00::/8\n' > "$CM_ETC_DIR/whitelist.txt"
 fw="$(cm_fw_render "$(id -un)")"

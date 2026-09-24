@@ -1,0 +1,20 @@
+# =============================================================================
+# Example allowlist: weekly club practice session - several judges and the
+# language reference allowed, still no search engines, no AI.
+#
+# Use it:
+#   sudo cp examples/whitelist-practice-lab.txt /etc/contest-env/whitelist.txt
+#   sudo cmanager reload
+# =============================================================================
+
+@codeforces
+@atcoder
+@codechef
+@vjudge
+@toph
+@lightoj
+@cses
+@docs              # en.cppreference.com, docs.python.org, docs.oracle.com
+
+# The club's own site, if you host problem sets there:
+#neupc.example.edu

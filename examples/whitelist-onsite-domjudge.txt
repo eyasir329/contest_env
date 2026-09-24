@@ -1,0 +1,24 @@
+# =============================================================================
+# Example allowlist: on-site contest (IUPC / ICPC-style) judged by DOMjudge
+# running on a server inside the lab network.
+#
+# Nothing on the Internet is reachable, only the judge server.
+# Replace the IP with your judge's address. Any port works (e.g. :80, :12345).
+#
+# Contestants open:  http://192.168.10.5/   (the judge's address)
+#
+# Use it:
+#   sudo cp examples/whitelist-onsite-domjudge.txt /etc/contest-env/whitelist.txt
+#   sudo cmanager reload
+# =============================================================================
+
+192.168.10.5       # DOMjudge web server
+
+# If the judge team runs a scoreboard / print server on another machine:
+#192.168.10.6
+
+# If contest rules allow language documentation, prefer the offline copies:
+#   file:///usr/share/cppreference/doc/html/en/index.html
+#   file:///usr/share/doc/python3/html/index.html
+# or allow the online versions:
+#@docs

@@ -1,0 +1,10 @@
+# =============================================================================
+# Example allowlist: a rated Codeforces round (Div. 2 / Div. 3 / Educational)
+# taken in the lab.
+#
+# Use it:
+#   sudo cp examples/whitelist-codeforces-round.txt /etc/contest-env/whitelist.txt
+#   sudo cmanager reload
+# =============================================================================
+
+@codeforces        # codeforces.com, codeforces.org + captcha, fonts, MathJax CDN

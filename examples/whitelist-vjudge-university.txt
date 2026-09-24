@@ -1,0 +1,17 @@
+# =============================================================================
+# Example allowlist: a university contest hosted on Virtual Judge (vjudge.net)
+# whose problems come from Codeforces and AtCoder.
+#
+# vjudge shows the original problem statement, so the origin judges' static
+# files must load too. vjudge normally submits to the origin judge on your behalf
+# (with vjudge's own bot account), so contestants do NOT need Codeforces /
+# AtCoder logins.
+#
+# Use it:
+#   sudo cp examples/whitelist-vjudge-university.txt /etc/contest-env/whitelist.txt
+#   sudo cmanager reload
+# =============================================================================
+
+@vjudge
+@codeforces        # statements embedded from Codeforces
+@atcoder           # statements embedded from AtCoder

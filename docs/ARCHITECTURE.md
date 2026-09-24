@@ -1,5 +1,8 @@
 # Architecture and threat model
 
+> New here? Read the plain-language version first: [HOW-IT-WORKS.md](HOW-IT-WORKS.md).
+> This page is the technical reference.
+
 ## Threat model
 
 The contestant is a strong competitive programmer who is logged into the

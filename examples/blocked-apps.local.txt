@@ -1,0 +1,19 @@
+# =============================================================================
+# Example local additions to the "programs contestants may not run" list.
+#
+# Copy to /etc/contest-env/blocked-apps.local.txt (upgrades keep this file),
+# then run: sudo cmanager restrict
+#
+# One entry per line: a command name (found via PATH) or an absolute path.
+# A directory blocks everything inside it.
+# =============================================================================
+
+# A local AI tool someone installed in /opt
+/opt/my-local-llm
+
+# A second browser you don't want used during contests
+opera
+/opt/vivaldi
+
+# Games
+/usr/games

@@ -1,5 +1,5 @@
 # contest-env developer tasks
-SHELL_FILES := bin/cmanager lib/*.sh install.sh uninstall.sh tests/run.sh
+SHELL_FILES := bin/cmanager lib/*.sh install.sh uninstall.sh tests/run.sh examples/rollout.sh
 
 .PHONY: all lint test install uninstall
 
