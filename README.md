@@ -59,8 +59,8 @@ their AI features and extensions, and AI apps and local LLM runtimes get an
 ## Quick start
 
 ```bash
-git clone https://github.com/eyasir329/NEUPC-PC-SETUP.git
-cd NEUPC-PC-SETUP
+git clone https://github.com/eyasir329/contest_env.git
+cd contest_env
 sudo ./install.sh                       # installs the `cmanager` command
 
 sudo cmanager setup                     # toolchains, editors, browsers, docs,

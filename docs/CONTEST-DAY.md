@@ -5,8 +5,8 @@ A checklist for lab admins and the judge team. Print it.
 ## T-3 days: prepare every PC (Internet on)
 
 ```bash
-git clone https://github.com/eyasir329/NEUPC-PC-SETUP.git
-cd NEUPC-PC-SETUP
+git clone https://github.com/eyasir329/contest_env.git
+cd contest_env
 sudo ./install.sh
 sudo cmanager setup                  # asks for the contestant password once
 ```
